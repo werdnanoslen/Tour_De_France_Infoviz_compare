@@ -1,4 +1,6 @@
 import controlP5.*;
+import java.util.Map;
+
 
 color bg = #f4f4f4;
 color black = #332626;
@@ -20,7 +22,12 @@ Map<String, Integer> winCounts;
 Map<String, String> winYears;
 
 ControlP5 controlP5;
-String details;
+int minWins;
+int maxWins;
+int minWinsSelected;
+int maxWinsSelected;
+DropdownList minWinsList;
+DropdownList maxWinsList;
 
 void setup()
 {
@@ -54,17 +61,87 @@ void setup()
         winYears.put(countries[i], "");
     }
     
+    minWins = 0;
+    maxWins = 0;
     String comma = "";
     for (int i=0; i<winCounts.size(); ++i)
     {
         winCounts.put(countries[i], 1+winCounts.get(countries[i])); //why doesn't ++ work here?
         comma = ("" == winYears.get(countries[i])) ? "" : ", ";
         winYears.put(countries[i], winYears.get(countries[i])+comma+years[i]);
+        
+        if (minWins > winCounts.get(countries[i])) minWins = winCounts.get(countries[i]);
+        if (maxWins < winCounts.get(countries[i])) maxWins = winCounts.get(countries[i]);
     }
+    //sortByValue(winCounts);
+
+    minWinsSelected = minWins;
+    maxWinsSelected = maxWins;
+    
+    controlP5 = new ControlP5(this);
+    minWinsList = controlP5.addDropdownList("minWinsSelected",axesOffsetX,axesOffsetY+axesHeight+30,70,120);
+        minWinsList.captionLabel().set("Select Min");
+        minWinsList.captionLabel().style().marginTop = 1;
+        minWinsList.setBarHeight(11);
+        for (int i=minWins; i<maxWins; ++i)
+        {
+            minWinsList.addItem(str(i), i);
+        }
+    maxWinsList = controlP5.addDropdownList("maxWinsSelected",axesOffsetX+axesWidth-70,axesOffsetY+axesHeight+30,70,120);
+        maxWinsList.captionLabel().set("Select Max");
+        maxWinsList.captionLabel().style().marginTop = 1;
+        maxWinsList.setBarHeight(11);
+        for (int i=minWins; i<maxWins; ++i)
+        {
+            maxWinsList.addItem(str(i), i);
+        }
 }
+
+/*// BEGIN UNORIGINAL CODE
+// The following method was taken from http://stackoverflow.com/a/109389
+static Map sortByValue(Map map) 
+{
+     List list = new LinkedList(map.entrySet());
+     Collections.sort(list, new Comparator() 
+     {
+          public int compare(Object o1, Object o2) 
+          {
+               return ((Comparable) ((Map.Entry) (o1)).getValue())
+              .compareTo(((Map.Entry) (o2)).getValue());
+          }
+     });
+
+    Map result = new LinkedHashMap();
+    for (Iterator it = list.iterator(); it.hasNext();) 
+    {
+        Map.Entry entry = (Map.Entry)it.next();
+        result.put(entry.getKey(), entry.getValue());
+    }
+    return result;
+} 
+
+// The following method was taken from http://stackoverflow.com/a/2904266
+static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
+     Set<T> keys = new HashSet<T>();
+     for (MyEntry<T, E> entry : map.entrySet()) {
+         if (value.equals(entry.getValue())) {
+             keys.add(entry.getKey());
+         }
+     }
+     return keys;
+}
+// END UNORIGINAL CODE*/
 
 void controlEvent(ControlEvent theEvent)
 {
+    if(theEvent.isFrom(minWinsList))
+    {
+        minWinsSelected = (int)minWinsList.value();
+    }
+    else if(theEvent.isFrom(maxWinsList))
+    {
+        maxWinsSelected = (int)maxWinsList.value();
+    }
 }
 
 void detailsOnDemand()
@@ -74,37 +151,27 @@ void detailsOnDemand()
 void showDetails(int i)
 {
 }
-
     
 void plot()
-{    
+{
+    textAlign(RIGHT, CENTER);
+    textSize(18);
+    int barOffset = axesHeight/5;
+    for (int i=0; i<numCases; ++i)
+    {
+        text("Belgium"/*winCounts.firstKey()*/, axesOffsetX-20, axesOffsetY+30+barOffset*i);
+        rect(axesOffsetX, axesOffsetY+50+barOffset*i, 10/*winCounts.get(winCounts.firstKey())*/, -40);
+    }
 }
 
 void drawAxes()
 {
-    fill(black);
-    stroke(black);
-    
-    //years
     line(axesOffsetX, axesOffsetY+axesHeight, axesOffsetX+axesWidth, axesOffsetY+axesHeight);
-    
     line(axesOffsetX, axesOffsetY, axesOffsetX, axesOffsetY+axesHeight);
-
-    stroke(darkYellow);
-    fill(darkYellow);
 }
 
 void drawLabels()
 {
-    fill(bg);
-    stroke(black);
-    rect(axesOffsetX-10, axesOffsetY-130, 135, 80, 15, 15, 15, 15);
-    //reset, arrggh why can't colors be set per function? T_T
-    fill(black);
-    
-    textSize(12);
-    text("CONTROL PANEL", axesOffsetX-2, axesOffsetY-110);
-    
     textSize(40);
     textAlign(RIGHT);
     text("Tour De France", axesOffsetX+axesWidth, axesOffsetY-100);
@@ -119,23 +186,12 @@ void drawLabels()
     //reset
     textSize(11);
     textAlign(LEFT);
-    
-
-    fill(black);
-    textSize(18);
-    textAlign(CENTER);
-    translate(axesOffsetX/2, axesOffsetY+axesHeight/2);
-    rotate(-PI/2);
-    text("Country", 0, 0);
-    //reset
-    rotate(PI/2);
-    translate(-(axesOffsetX/2), -(axesOffsetY+axesHeight/2));
-    textAlign(LEFT);
-    textSize(11);
 }
                 
 void draw()
 {
+    fill(black);
+    stroke(black);
     smooth(); //nothing's changing much, so might as well...
     background(bg); //clears screen
     drawAxes();
@@ -143,4 +199,5 @@ void draw()
     drawLabels();
     detailsOnDemand();
 }
+
 
