@@ -18,6 +18,8 @@ int numCases;
 
 int[] years;
 String[] countries;
+String[] countrySet;
+String[][] uniqueCountries;
 Map<String, Integer> winCounts;
 Map<String, String> winYears;
 
@@ -73,13 +75,20 @@ void setup()
         if (minWins > winCounts.get(countries[i])) minWins = winCounts.get(countries[i]);
         if (maxWins < winCounts.get(countries[i])) maxWins = winCounts.get(countries[i]);
     }
-    //sortByValue(winCounts);
-
     minWinsSelected = minWins;
     maxWinsSelected = maxWins;
     
+    uniqueCountries = new String[winCounts.size()][2];
+    countrySet = winCounts.keySet().toArray(new String[0]);
+    for (int i=0; i<uniqueCountries.length; ++i)
+    {
+        uniqueCountries[i][0] = countrySet[i];
+        uniqueCountries[i][1] = str(winCounts.get(countrySet[i]));
+    }
+    Arrays.sort(uniqueCountries, new ArrayComparator(1, false));
+
     controlP5 = new ControlP5(this);
-    minWinsList = controlP5.addDropdownList("minWinsSelected",axesOffsetX,axesOffsetY+axesHeight+30,70,120);
+    minWinsList = controlP5.addDropdownList("minWinsSelected",axesOffsetX,axesOffsetY+axesHeight+30,70,50);
         minWinsList.captionLabel().set("Select Min");
         minWinsList.captionLabel().style().marginTop = 1;
         minWinsList.setBarHeight(11);
@@ -87,7 +96,7 @@ void setup()
         {
             minWinsList.addItem(str(i), i);
         }
-    maxWinsList = controlP5.addDropdownList("maxWinsSelected",axesOffsetX+axesWidth-70,axesOffsetY+axesHeight+30,70,120);
+    maxWinsList = controlP5.addDropdownList("maxWinsSelected",axesOffsetX+axesWidth-70,axesOffsetY+axesHeight+30,70,50);
         maxWinsList.captionLabel().set("Select Max");
         maxWinsList.captionLabel().style().marginTop = 1;
         maxWinsList.setBarHeight(11);
@@ -97,40 +106,23 @@ void setup()
         }
 }
 
-/*// BEGIN UNORIGINAL CODE
-// The following method was taken from http://stackoverflow.com/a/109389
-static Map sortByValue(Map map) 
+class ArrayComparator implements Comparator<Comparable[]> 
 {
-     List list = new LinkedList(map.entrySet());
-     Collections.sort(list, new Comparator() 
-     {
-          public int compare(Object o1, Object o2) 
-          {
-               return ((Comparable) ((Map.Entry) (o1)).getValue())
-              .compareTo(((Map.Entry) (o2)).getValue());
-          }
-     });
+    private final int columnToSort;
+    private final boolean ascending;
 
-    Map result = new LinkedHashMap();
-    for (Iterator it = list.iterator(); it.hasNext();) 
+    public ArrayComparator(int columnToSort, boolean ascending) 
     {
-        Map.Entry entry = (Map.Entry)it.next();
-        result.put(entry.getKey(), entry.getValue());
+        this.columnToSort = columnToSort;
+        this.ascending = ascending;
     }
-    return result;
-} 
 
-// The following method was taken from http://stackoverflow.com/a/2904266
-static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
-     Set<T> keys = new HashSet<T>();
-     for (MyEntry<T, E> entry : map.entrySet()) {
-         if (value.equals(entry.getValue())) {
-             keys.add(entry.getKey());
-         }
-     }
-     return keys;
+    public int compare(Comparable[] c1, Comparable[] c2) 
+    {
+        int cmp = c1[columnToSort].compareTo(c2[columnToSort]);
+        return ascending ? cmp : -cmp;
+    }
 }
-// END UNORIGINAL CODE*/
 
 void controlEvent(ControlEvent theEvent)
 {
@@ -142,6 +134,14 @@ void controlEvent(ControlEvent theEvent)
     {
         maxWinsSelected = (int)maxWinsList.value();
     }
+    /*else if(theEvent.isFrom(sortAscending))
+    {
+        Arrays.sort(uniqueCountries, new ArrayComparator(1, true));
+    }
+    else if(theEvent.isFrom(sortDescending))
+    {
+        Arrays.sort(uniqueCountries, new ArrayComparator(1, false));
+    }*/
 }
 
 void detailsOnDemand()
@@ -157,10 +157,15 @@ void plot()
     textAlign(RIGHT, CENTER);
     textSize(18);
     int barOffset = axesHeight/5;
-    for (int i=0; i<numCases; ++i)
+    for (int i=0, j=1; i<uniqueCountries.length-1; ++i)
     {
-        text("Belgium"/*winCounts.firstKey()*/, axesOffsetX-20, axesOffsetY+30+barOffset*i);
-        rect(axesOffsetX, axesOffsetY+50+barOffset*i, 10/*winCounts.get(winCounts.firstKey())*/, -40);
+        if (minWinsSelected <= int(uniqueCountries[i][1]) && int(uniqueCountries[i][1]) <= maxWinsSelected)
+        {
+            text(uniqueCountries[i][0], axesOffsetX-20, axesOffsetY+30+barOffset*i);
+            rect(axesOffsetX, axesOffsetY+50+barOffset*i, map(winCounts.get(uniqueCountries[i][0]), minWins, maxWins, 0, axesWidth), -40);
+            ++j;
+        }
+        if (j>numCases) break;
     }
 }
 
@@ -198,6 +203,7 @@ void draw()
     plot();
     drawLabels();
     detailsOnDemand();
+    //text(uniqueCountries[uniqueCountries.length-1][0], 10, 10); //testing
 }
 
 
